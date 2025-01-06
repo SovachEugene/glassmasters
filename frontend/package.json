@@ -1,0 +1,20 @@
+{
+  "name": "glassmasters-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for GlassMasters",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "backend": "cd ../backend && go run main.go",
+    "start": "concurrently \"npm run dev\" \"npm run backend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "vite": "^4.0.0"
+  }
+}
