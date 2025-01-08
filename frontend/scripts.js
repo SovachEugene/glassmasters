@@ -4,9 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const LOADER_MIN_DISPLAY_TIME_MS = 1000;
     const SWIPER_AUTOPLAY_DELAY = 3000;
     const SWIPER_SPEED = 1000;
-    const TRANSLATION_API_URL = 'http://localhost:8083/api/translations';
+    const TRANSLATION_API_URL = 'http://localhost:8080/api/translations';
     const LOCATION_API_URL = 'http://ip-api.com/json/';
-    const FORM_API_URL = 'http://localhost:8083/api/clients';
+    const FORM_API_URL = 'http://localhost:8080/api/clients';
+
+
+    
+    console.log('API URL:', TRANSLATION_API_URL);
+
 
     // Установка Cookie
     const setCookie = (name, value, minutes) => {

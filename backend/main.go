@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"backend/config"
 	"backend/handlers/auth"
@@ -14,57 +16,77 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const defaultServerAddr = ":SERVER_ADDR" // Default server address
+const defaultServerAddr = ":8080" // Default server address
 
 func main() {
-	// Load environment variables from .env file
+	// Загружаем переменные окружения
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")
 	}
 
-	// Load server address from environment variables
+	// Получаем адрес сервера из переменных окружения
 	serverAddr := os.Getenv("SERVER_ADDR")
 	if serverAddr == "" {
 		serverAddr = defaultServerAddr
 	}
 
-	// Initialize the database
+	// Проверяем строку подключения к базе данных
+	dbDSN := os.Getenv("DB_DSN")
+	if dbDSN == "" {
+		log.Fatal("DB_DSN is not set in the environment")
+	}
+
+	// Инициализируем базу данных (но без миграций)
 	config.InitDB()
 
-	// Create routes
+	// Создаем маршрутизатор
 	r := mux.NewRouter()
 
-	// API routes
+	// Регистрируем маршруты
 	registerClientRoutes(r)
 	registerAuthRoutes(r)
 	registerTranslationRoutes(r)
 
-	// Apply CORS middleware
+	// Добавляем CORS middleware
 	http.Handle("/", enableCORS(r))
 
-	// Start the server
+	// Логируем запуск сервера
 	log.Printf("Server running at http://localhost%s", serverAddr)
-	log.Fatal(http.ListenAndServe(serverAddr, nil))
+
+	// Канал для обработки сигнала завершения работы
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// Запуск сервера в отдельной горутине
+	go func() {
+		if err := http.ListenAndServe(serverAddr, nil); err != nil {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	// Ожидание сигнала завершения
+	<-stop
+	log.Println("Shutting down server...")
 }
 
-// registerClientRoutes sets up routes for client-related endpoints
+// registerClientRoutes устанавливает маршруты для работы с клиентами
 func registerClientRoutes(r *mux.Router) {
 	r.HandleFunc("/api/clients", clients.GetClientsHandler).Methods("GET")
 	r.HandleFunc("/api/clients", clients.CreateClientHandler).Methods("POST")
 	r.HandleFunc("/api/clients/{id}/processed", clients.MarkAsProcessedHandler).Methods("POST")
 }
 
-// registerAuthRoutes sets up routes for authentication
+// registerAuthRoutes устанавливает маршруты для работы с аутентификацией
 func registerAuthRoutes(r *mux.Router) {
 	r.HandleFunc("/api/login", auth.LoginHandler).Methods("POST")
 }
 
-// registerTranslationRoutes sets up routes for translations
+// registerTranslationRoutes устанавливает маршруты для работы с переводами
 func registerTranslationRoutes(r *mux.Router) {
 	r.HandleFunc("/api/translations", translations.GetLatestTranslationHandler).Methods("GET")
 }
 
-// enableCORS adds CORS headers to responses
+// enableCORS добавляет CORS-заголовки в ответы
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")

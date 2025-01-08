@@ -1,0 +1,6 @@
+CREATE TABLE translations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lang VARCHAR(2) NOT NULL,
+    json_data JSON NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
