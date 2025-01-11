@@ -1,20 +1,23 @@
 {
-  "name": "glassmasters-frontend",
+  "name": "frontend",
   "version": "1.0.0",
-  "description": "Frontend for GlassMasters",
-  "main": "index.js",
+  "description": "",
+  "main": "scripts.js",
   "scripts": {
-    "dev": "vite",
+    "start": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "backend": "cd ../backend && go run main.go",
-    "start": "concurrently \"npm run dev\" \"npm run backend\""
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^4.1.0"
+  },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "vite": "^4.0.0"
+    "@vitejs/plugin-react": "^3.1.0"
   }
 }

@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_DATABASE: client_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: client_database
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+volumes:
+  db_data:

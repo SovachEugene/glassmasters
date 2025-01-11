@@ -1,22 +1,29 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"backend/config"
 	"backend/handlers/auth"
 	"backend/handlers/clients"
 	"backend/handlers/translations"
+	"database/sql"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
-const defaultServerAddr = ":8080" // Default server address
+const (
+	defaultServerAddr = ":8080" // Default server address
+	migrationsUpDir   = "./migrations/migrations_up"
+	migrationsDownDir = "./migrations/migrations_down"
+)
 
 func main() {
 	// Загружаем переменные окружения
@@ -36,8 +43,14 @@ func main() {
 		log.Fatal("DB_DSN is not set in the environment")
 	}
 
-	// Инициализируем базу данных (но без миграций)
+	// Инициализируем базу данных
 	config.InitDB()
+	defer config.CloseDB()
+
+	// Выполняем миграции
+	if err := runMigrations(config.GetDB(), migrationsUpDir); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	// Создаем маршрутизатор
 	r := mux.NewRouter()
@@ -67,6 +80,32 @@ func main() {
 	// Ожидание сигнала завершения
 	<-stop
 	log.Println("Shutting down server...")
+}
+
+// runMigrations выполняет миграции из указанной папки
+func runMigrations(db *sql.DB, migrationsDir string) error {
+	files, err := ioutil.ReadDir(migrationsDir)
+	if err != nil {
+		return fmt.Errorf("failed to read migrations directory: %w", err)
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".sql" {
+			filePath := filepath.Join(migrationsDir, file.Name())
+			query, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("failed to read migration file %s: %w", file.Name(), err)
+			}
+
+			log.Printf("Running migration: %s", file.Name())
+			if _, err := db.Exec(string(query)); err != nil {
+				return fmt.Errorf("failed to execute migration %s: %w", file.Name(), err)
+			}
+		}
+	}
+
+	log.Println("Migrations executed successfully")
+	return nil
 }
 
 // registerClientRoutes устанавливает маршруты для работы с клиентами
